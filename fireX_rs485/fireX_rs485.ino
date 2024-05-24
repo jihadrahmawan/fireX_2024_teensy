@@ -84,9 +84,17 @@ volatile long encoderS2Count = 0;
 volatile float bno_x = 0;
 volatile float bno_y = 0;
 volatile float bno_z = 0;
+
+volatile int led_color_set=0;
 // Variables to store position
 float x_pos = 0.0;
 float y_pos = 0.0;
+
+const int numPositions = 2;  // di isi ada berapa titik
+const int set_robotPos[numPositions][2] = {
+  { 100, 200 },  // {x, y}
+  { -100, -200 }
+};
 
 
 
@@ -149,43 +157,31 @@ void setup() {
 
 void loop() {
 
+  // Serial.print(" cm, Y Position: ");
+  // Serial.println(y_pos);
+  // Serial.print(" cm, X Position: ");
+  // Serial.println(x_pos);
 
 
-
-
-  Serial.print(" cm, Y Position: ");
-  Serial.println(y_pos);
-  Serial.print(" cm, X Position: ");
-  Serial.println(x_pos);
-
-
-
-  // speedx = 50;
-  // speedy = 0;
-  // speedz = 0;
+  //contoh berpindah ke 2 posisi baru, jika ingin ditambahkan, dicopy saja
+  // moveToPosition(100, 200); // di isi sendiri nilai posisinya (x, y);
   // delay(1000);
-  // speedx = 30;
-  // speedy = -10;
-  // speedz = 0;
+  // moveToPosition(100, -200); 
   // delay(1000);
-
-
-
-
-
-
-  // analogWrite(PWM_PENENDANG_1, 100);
-  // analogWrite(PWM_PENENDANG_2, 100);
-
-  // Stop motors
-  //stopMotor();
-  digitalWrite(13, !digitalRead(13));
-  delay(50);
+  
+  //delay(50);
+  led_color_set = RED;
   // Loop back to set motor speed again, or implement other logic as needed
 }
 
 void moveToPosition(int targetX, int targetY) {
+
   while (true) {
+
+    Serial.print(" cm, Y Position: ");
+    Serial.println(y_pos);
+    Serial.print(" cm, X Position: ");
+    Serial.println(x_pos);
     float currentX = x_pos;
     float currentY = y_pos;
 
@@ -194,24 +190,28 @@ void moveToPosition(int targetX, int targetY) {
     const float tolerance = 20;  // Adjust based on your robot's precision
 
     if (abs(errorX) < tolerance && abs(errorY) < tolerance) {
-      set_speed(0, 0, 0); // Stop the robot
-      break; // Target position reached
+      set_speed(0, 0, 0);  // Stop the robot
+      break;               // Target position reached
     }
 
     // Calculate speed based on error (simple proportional control)
-    float speedX = errorX * 0.1; // Adjust the gain as needed
-    float speedY = errorY * 0.1; // Adjust the gain as needed
+    float KP = 0.1;
+    float speedX = errorX * KP;  // Adjust the gain as needed
+    float speedY = errorY * KP;  // Adjust the gain as needed
+   
+     float max_speed = 30;
+    if (speedX >= max_speed) speedX = max_speed;
+    if (speedX <= -max_speed) speedX = -max_speed;
 
-    if (speedX>100)speedX=100;
-    if (speedX<-100)speedX=-100;
-
-    if (speedY>100)speedY=100;
-    if (speedY<-100)speedY=-100;
+    if (speedY >= max_speed) speedY = max_speed;
+    if (speedY <= -max_speed) speedY = -max_speed;
 
 
     set_speed(speedX, speedY, 0);
+    digitalWrite(13, !digitalRead(13));
+    led_color_set = GREEN;
 
-    delay(50); // Adjust the delay based on the control loop requirements
+    delay(50);  // Adjust the delay based on the control loop requirements
   }
 }
 
@@ -220,8 +220,8 @@ void moveToPosition(int targetX, int targetY) {
 void led_action() {
   while (1) {
     int microsec = 1500000 / leds.numPixels();
-    colorWipe(GREEN, microsec);
-    colorWipe(PINK, microsec);
+    colorWipe(led_color_set, microsec);
+    //colorWipe(PINK, microsec);
     threads.yield();
   }
 }
