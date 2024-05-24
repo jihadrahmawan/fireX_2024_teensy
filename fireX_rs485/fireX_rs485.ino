@@ -85,13 +85,10 @@ volatile float bno_x = 0;
 volatile float bno_y = 0;
 volatile float bno_z = 0;
 // Variables to store position
-float xPos = 0.0;
-float yPos = 0.0;
+float x_pos = 0.0;
+float y_pos = 0.0;
 
-// PID control parameters
-float kp = 1.0, ki = 0.0, kd = 0.0;
-float prevErrorX = 0.0, prevErrorY = 0.0;
-float integralX = 0.0, integralY = 0.0;
+
 
 void encoderS1A_ISR() {
   if (digitalRead(ENCODER_S1_A) == digitalRead(ENCODER_S1_B)) {
@@ -146,45 +143,20 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(ENCODER_S1_A), encoderS1A_ISR, CHANGE);
   attachInterrupt(digitalPinToInterrupt(ENCODER_S2_A), encoderS2A_ISR, CHANGE);
   pinMode(13, OUTPUT);
+  delay(1000);
+  threads.addThread(get_robot_pos_from_encoder);
 }
 
 void loop() {
 
 
-  noInterrupts();
-  long newS1Count = encoderS1Count;
-  long newS2Count = encoderS2Count;
-  // Serial.print(" Encoder 1 Raw value: ");
-  // Serial.println(encoderS2Count);
-  // Serial.print(" Encoder 2 Raw value: ");
-  // Serial.println(encoderS1Count);
-  interrupts();
-
-  // Constants for the angles (in degrees)
-  const float angleS1 = 45.0;
-  const float angleS2 = 135.0;
-
-  // Conversion factor from ticks to distance (assuming a certain wheel radius and ticks per revolution)
-  const float ticksPerRevolution = 1280;  // Example value, adjust according to your encoder specification
-  const float wheelDiameter = 35;
-  const float wheelCircumference = PI*wheelDiameter;   // roda diameter
-  const float distancePerTick = wheelCircumference / ticksPerRevolution;
-
-  float distanceS1 = newS1Count * distancePerTick;
-  float distanceS2 = newS2Count * distancePerTick;
-
-  // Calculate the (x, y) position
-  float x = (distanceS1 * cos(radians(angleS1)) + distanceS2 * cos(radians(angleS2))) / 2;
-  float y = (distanceS1 * sin(radians(angleS1)) + distanceS2 * sin(radians(angleS2))) / 2;
 
 
-  // Print position
-  Serial.print("X Position: ");
-  Serial.print(xPos);
-  Serial.print(" mm, Y Position: ");
-  Serial.println(y);
-  Serial.print(" mm, X Position: ");
-  Serial.println(x);
+
+  Serial.print(" cm, Y Position: ");
+  Serial.println(y_pos);
+  Serial.print(" cm, X Position: ");
+  Serial.println(x_pos);
 
 
 
@@ -212,6 +184,38 @@ void loop() {
   // Loop back to set motor speed again, or implement other logic as needed
 }
 
+void moveToPosition(int targetX, int targetY) {
+  while (true) {
+    float currentX = x_pos;
+    float currentY = y_pos;
+
+    float errorX = targetX - currentX;
+    float errorY = targetY - currentY;
+    const float tolerance = 20;  // Adjust based on your robot's precision
+
+    if (abs(errorX) < tolerance && abs(errorY) < tolerance) {
+      set_speed(0, 0, 0); // Stop the robot
+      break; // Target position reached
+    }
+
+    // Calculate speed based on error (simple proportional control)
+    float speedX = errorX * 0.1; // Adjust the gain as needed
+    float speedY = errorY * 0.1; // Adjust the gain as needed
+
+    if (speedX>100)speedX=100;
+    if (speedX<-100)speedX=-100;
+
+    if (speedY>100)speedY=100;
+    if (speedY<-100)speedY=-100;
+
+
+    set_speed(speedX, speedY, 0);
+
+    delay(50); // Adjust the delay based on the control loop requirements
+  }
+}
+
+
 
 void led_action() {
   while (1) {
@@ -225,14 +229,50 @@ void led_action() {
 void imu_read() {
 
   while (1) {
-    bno055_read_euler_hrp(&myEulerData);  //Update Euler data into the structure
+    bno055_read_euler_hrp(&myEulerData);     //Update Euler data into the structure
     bno_z = (float(myEulerData.h) / 16.00);  //Convert to degrees
     bno_x = (float(myEulerData.r) / 16.00);  //Convert to degrees
     bno_y = (float(myEulerData.p) / 16.00);  //Convert to degrees
-
     threads.delay(50);
   }
 }
+
+void get_robot_pos_from_encoder() {
+  while (1) {
+    noInterrupts();
+    long newS1Count = encoderS1Count;
+    long newS2Count = encoderS2Count;
+    interrupts();
+
+    // Constants for the angles (in degrees)
+    const float angleS1 = 45.0;
+    const float angleS2 = 135.0;
+
+    // Conversion factor from ticks to distance (assuming a certain wheel radius and ticks per revolution)
+    const float ticksPerRevolution = 1280;  // Example value, adjust according to your encoder specification
+    const float wheelDiameter = 6;
+    const float wheelCircumference = PI * wheelDiameter;  // roda diameter
+    const float distancePerTick = wheelCircumference / ticksPerRevolution;
+
+    float distanceS1 = newS1Count * distancePerTick;
+    float distanceS2 = newS2Count * distancePerTick;
+
+    // Calculate the (x, y) position
+    x_pos = (distanceS1 * cos(radians(angleS1)) + distanceS2 * cos(radians(angleS2)));
+    y_pos = (distanceS1 * sin(radians(angleS1)) + distanceS2 * sin(radians(angleS2)));
+    threads.yield();
+  }
+}
+
+void set_speed(float x, float y, float z) {
+  speedx = x;
+  speedy = y;
+  speedz = z;
+}
+
+
+
+
 void odometry_system() {
   while (1) {
     float vx = float(speedx);     // Desired velocity in x direction
