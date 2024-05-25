@@ -16,6 +16,8 @@ struct bno055_euler myEulerData;  //Structure to hold the Euler data
 
 unsigned long lastTime = 0;
 
+const int PENENDANG = 6;
+
 
 
 #include <WS2812Serial.h>
@@ -85,10 +87,13 @@ volatile float bno_x = 0;
 volatile float bno_y = 0;
 volatile float bno_z = 0;
 
-volatile int led_color_set=0;
+volatile int led_color_set = 0;
 // Variables to store position
 float x_pos = 0.0;
 float y_pos = 0.0;
+
+float global_var_last_error_slot3 = 0;
+float integral3;
 
 const int numPositions = 2;  // di isi ada berapa titik
 const int set_robotPos[numPositions][2] = {
@@ -146,6 +151,7 @@ void setup() {
   pinMode(ENCODER_S1_B, INPUT);
   pinMode(ENCODER_S2_A, INPUT);
   pinMode(ENCODER_S2_B, INPUT);
+  pinMode(PENENDANG, OUTPUT);
 
   //Attach interrupts
   attachInterrupt(digitalPinToInterrupt(ENCODER_S1_A), encoderS1A_ISR, CHANGE);
@@ -161,53 +167,198 @@ void loop() {
   // Serial.println(y_pos);
   // Serial.print(" cm, X Position: ");
   // Serial.println(x_pos);
-
-
+  // Serial.print(" imu z: ");
+  // Serial.println(bno_z);
   //contoh berpindah ke 2 posisi baru, jika ingin ditambahkan, dicopy saja
-  // moveToPosition(100, 200); // di isi sendiri nilai posisinya (x, y);
+  moveToPosition(-35, 110, true, false);  // di isi sendiri nilai posisinya (x, y);
+  delay(6000);
+  set_heading(-80, true);
+ 
+
+  delay(1000);
+  moveToPosition(85, 0, true, false);
+  delay(3000);
+  set_heading(-5, true);
+  delay(1000);
+   //MENENANG
+  digitalWrite(PENENDANG, 1);
+  delay(5); // dirubah dari 1 - 50; semakin besar semakin kuat
+  digitalWrite(PENENDANG, 0);
+  //================
+  delay(1000);
+  moveToPosition(-45, 0, true, false);
+  delay(3000);
+
+  delay(2000);
+  while (1) {
+    analogWrite(PWM_PENENDANG_1, 0);
+    analogWrite(PWM_PENENDANG_2, 0);
+    led_color_set = BLUE;
+  }
+  // moveToPosition(100, -200);
   // delay(1000);
-  // moveToPosition(100, -200); 
-  // delay(1000);
-  
+
   //delay(50);
   led_color_set = RED;
   // Loop back to set motor speed again, or implement other logic as needed
 }
-
-void moveToPosition(int targetX, int targetY) {
+void set_heading(int degree, bool penggiring) {
 
   while (true) {
 
-    Serial.print(" cm, Y Position: ");
-    Serial.println(y_pos);
-    Serial.print(" cm, X Position: ");
-    Serial.println(x_pos);
+    if (penggiring) {
+      analogWrite(PWM_PENENDANG_1, 200);
+      analogWrite(PWM_PENENDANG_2, 200);
+    } else {
+
+      analogWrite(PWM_PENENDANG_1, 0);
+      analogWrite(PWM_PENENDANG_2, 0);
+    }
+    float raw_imu_z = bno_z;
+    if (raw_imu_z > 180) raw_imu_z = raw_imu_z - 360;
+    float error_imu = float(degree) - raw_imu_z;
+    //if (error_imu <= 0)error_imu + 360;
+    // if (error_imu >= 180) {
+    //   error_imu = error_imu - 360;
+    // // }
+
+
+    float error = error_imu;
+    float maxError = 100;
+    float maxerr_intergral = 10;
+
+    if (error > maxError) {
+      error = maxError;
+    } else if (error < -maxError) {
+      error = -maxError;
+    }
+
+    if (abs(error) < maxerr_intergral) {
+      integral3 += error;
+    } else {
+      integral3 = 0;
+    }
+
+    // PID control IMU
+    float kp = 25.0;
+    float ki = 0;
+    float kd = 20.0;
+    float speedZ = -(kp * error + ki * integral3 + kd * (error - global_var_last_error_slot3));
+    global_var_last_error_slot3 = error;
+    //float speedZ = error_imu * 1.5;
+
+    if (speedZ >= 750) speedZ = 750;
+    if (speedZ <= -750) speedZ = -750;
+
+    //  Serial.print(" error imu z: ");
+    // Serial.println(error_imu);
+
+    Serial.print(" speed: ");
+    Serial.println(speedZ);
+
+
+
+    set_speed(0, 0, speedZ);
+    led_color_set = WHITE;
+    if (abs(speedZ) < 250) {
+      encoderS1Count = 0;
+      encoderS2Count = 0;
+
+      set_speed(0, 0, 0);  // Stop the robot
+      break;               // Target position reached
+    }
+  }
+}
+void moveToPosition(int targetX, int targetY, bool penggiring, bool imu_on) {
+
+  while (true) {
+
+    if (penggiring) {
+      analogWrite(PWM_PENENDANG_1, 200);
+      analogWrite(PWM_PENENDANG_2, 200);
+    } else {
+
+      analogWrite(PWM_PENENDANG_1, 0);
+      analogWrite(PWM_PENENDANG_2, 0);
+    }
+
     float currentX = x_pos;
     float currentY = y_pos;
 
     float errorX = targetX - currentX;
     float errorY = targetY - currentY;
-    const float tolerance = 20;  // Adjust based on your robot's precision
+    const float tolerance = 30;  // Adjust based on your robot's precision
 
     if (abs(errorX) < tolerance && abs(errorY) < tolerance) {
       set_speed(0, 0, 0);  // Stop the robot
-      break;               // Target position reached
+      encoderS1Count = 0;
+      encoderS2Count = 0;
+      break;  // Target position reached
     }
 
     // Calculate speed based on error (simple proportional control)
-    float KP = 0.1;
+    float KP = 2.54;
     float speedX = errorX * KP;  // Adjust the gain as needed
     float speedY = errorY * KP;  // Adjust the gain as needed
-   
-     float max_speed = 30;
+
+    float max_speed = 100;
     if (speedX >= max_speed) speedX = max_speed;
     if (speedX <= -max_speed) speedX = -max_speed;
 
     if (speedY >= max_speed) speedY = max_speed;
     if (speedY <= -max_speed) speedY = -max_speed;
 
+    float error_imu = bno_z;
+    if (error_imu >= 180) {
+      error_imu = error_imu - 360;
+    }
 
-    set_speed(speedX, speedY, 0);
+    Serial.print(" error imu z: ");
+    Serial.println(error_imu);
+
+    float error = error_imu;
+    float maxError = 20;
+    float maxerr_intergral = 10;
+    if (error > maxError) {
+      error = maxError;
+    } else if (error < -maxError) {
+      error = -maxError;
+    }
+
+    if (abs(error) < maxerr_intergral) {
+      integral3 += error;
+    } else {
+      integral3 = 0;
+    }
+
+    // PID control IMU
+    float kp = 25.0;
+    float ki = 0;
+    float kd = 20.0;
+    float speedZ = kp * error + ki * integral3 + kd * (error - global_var_last_error_slot3);
+    global_var_last_error_slot3 = error;
+    //float speedZ = error_imu * 1.5;
+
+    if (speedZ >= 100) speedZ = 100;
+    if (speedZ <= -100) speedZ = -100;
+
+    Serial.print(" cm, Y Position: ");
+    Serial.print(y_pos);
+    Serial.print(" cm, X Position: ");
+    Serial.println(x_pos);
+    Serial.print(" X Speed: ");
+    Serial.print(speedX);
+    Serial.print(" Y Speed: ");
+    Serial.print(speedY);
+    Serial.print(" Z Speed: ");
+    Serial.print(speedZ);
+    Serial.print(" imu z: ");
+    Serial.println(bno_z);
+
+
+    //set_speed(0, 0, speedZ);
+    if (imu_on)set_speed(speedY, speedX, speedZ);
+    else set_speed(speedY, speedX, 0);
     digitalWrite(13, !digitalRead(13));
     led_color_set = GREEN;
 
@@ -258,8 +409,8 @@ void get_robot_pos_from_encoder() {
     float distanceS2 = newS2Count * distancePerTick;
 
     // Calculate the (x, y) position
-    x_pos = (distanceS1 * cos(radians(angleS1)) + distanceS2 * cos(radians(angleS2)));
-    y_pos = (distanceS1 * sin(radians(angleS1)) + distanceS2 * sin(radians(angleS2)));
+    x_pos = (distanceS1 * cos(radians(angleS1)) + distanceS2 * cos(radians(angleS2))) / 2;
+    y_pos = (distanceS1 * sin(radians(angleS1)) + distanceS2 * sin(radians(angleS2))) / 2;
     threads.yield();
   }
 }
