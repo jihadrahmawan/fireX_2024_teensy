@@ -192,26 +192,26 @@ void loop() {
 
   // }
 
-  menunggu_oper_vision();
+ // menunggu_oper_vision();
 
-  // if (step == 0) {
+  if (step == 0) {
 
-  //   // contoh jika step 0 menggunakan odometry
-  //   // 1 isi dulu koordinat robot
-  //   targetX = -35;
-  //   targetY = 110;
-  //   // perlukan kontrol yaw untuk bergerak?
-  //   // jika iya maka:
-  //   yaw_kontrol_odometry_on = true;
-  //   // jika perlu penggiring maka :
-  //   penggiring_aktif = false;
-  //   moveToPosition(targetX, targetY);
-  //   //disini robot sudah sampai tujuan
-  //   set_speed(0, 0, 0);  // Stop the robot
-  //   delay(5000);
-  //   //menendang (30);
-  //   step = 1;
-  // }
+    // contoh jika step 0 menggunakan odometry
+    // 1 isi dulu koordinat robot
+    targetX = -35;
+    targetY = 110;
+    // perlukan kontrol yaw untuk bergerak?
+    // jika iya maka:
+    yaw_kontrol_odometry_on = true;
+    // jika perlu penggiring maka :
+    penggiring_aktif = false;
+    moveToPosition(targetX, targetY);
+    //disini robot sudah sampai tujuan
+    set_speed(0, 0, 0);  // Stop the robot
+    delay(5000);
+    //menendang (30);
+    step = 1;
+  }
 
 
   // //===============================step 1
