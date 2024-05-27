@@ -178,7 +178,7 @@ void setup() {
   threads.addThread(get_robot_pos_from_encoder);
   //threads.addThread(run_odometry);
   //threads.addThread(run_heading);
-  threads.addThread(send_toNuc);
+  //threads.addThread(send_toNuc);
   threads.addThread(receive_fromNuc);
 }
 
@@ -499,6 +499,8 @@ void stop (){
 void moveToPosition(int targetX, int targetY) {
 
   while (true) {
+
+    Serial.println(String(x_pos) + ";" + String(y_pos) + ";" + String(bno_z) + ";" + String(step));
     digitalWrite(PENENDANG, 1);
     if (penggiring_aktif) {
       analogWrite(PWM_PENENDANG_1, 200);
@@ -577,6 +579,8 @@ void moveToPosition(int targetX, int targetY) {
 void run_heading(int deg) {
 
   while (1) {
+
+    Serial.println(String(x_pos) + ";" + String(y_pos) + ";" + String(bno_z) + ";" + String(step));
     digitalWrite(PENENDANG, 1);
     if (penggiring_aktif) {
       analogWrite(PWM_PENENDANG_1, 200);
