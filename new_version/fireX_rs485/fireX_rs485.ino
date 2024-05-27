@@ -141,7 +141,7 @@ SerialParser serialParser;
 int step = 0;
 
 void setup() {
-  
+
   // delay(4000);
   pinMode(PENENDANG, OUTPUT);
   Serial.begin(115200);
@@ -192,45 +192,63 @@ void loop() {
 
   // }
 
-  if (step == 0) {
-    
-    // contoh jika step 0 menggunakan odometry
-    // 1 isi dulu koordinat robot
-    targetX = -35;
-    targetY = 110;
-    // perlukan kontrol yaw untuk bergerak?
-    // jika iya maka:
-    yaw_kontrol_odometry_on = true;
-    // jika perlu penggiring maka :
-    penggiring_aktif = false;
-    moveToPosition(targetX, targetY);
-    set_speed(0, 0, 0);  // Stop the robot
-    delay(5000);
-    //menendang (30);
-    step = 1;
-  }
+  menunggu_oper_vision();
+
+  // if (step == 0) {
+
+  //   // contoh jika step 0 menggunakan odometry
+  //   // 1 isi dulu koordinat robot
+  //   targetX = -35;
+  //   targetY = 110;
+  //   // perlukan kontrol yaw untuk bergerak?
+  //   // jika iya maka:
+  //   yaw_kontrol_odometry_on = true;
+  //   // jika perlu penggiring maka :
+  //   penggiring_aktif = false;
+  //   moveToPosition(targetX, targetY);
+  //   //disini robot sudah sampai tujuan
+  //   set_speed(0, 0, 0);  // Stop the robot
+  //   delay(5000);
+  //   //menendang (30);
+  //   step = 1;
+  // }
 
 
-  //===============================step 1
+  // //===============================step 1
 
-  if (step == 1) {
-    // contoh step 1 set heading
-    targetHeading = -75;
-    penggiring_aktif = true;   // penggiring aktif
-    set_heading_aktif = true;  //nyalakan robot untuk set heading
-    run_heading(targetHeading);
-    delay(1000);  // delay sejenak sebelum menendang lagi
-    menendang(20);
-    //reset_variable();
-    step = 2;
-  }
+  // if (step == 1) {
+  //   // contoh step 1 set heading
+  //   targetHeading = -75;
+  //   penggiring_aktif = true;   // penggiring aktif
+  //   set_heading_aktif = true;  //nyalakan robot untuk set heading
+  //   run_heading(targetHeading);
+  //   delay(1000);  // delay sejenak sebelum menendang lagi
+  //   menendang(20);
+  //   //reset_variable();
+  //   step = 2;
+  // }
 
+  // if (step == 4) {
+  //   int kecepatan_kejar = 100;
+  //   penggiring_aktif = true;
+  //   mengejar_bola_vision(kecepatan_kejar);
+  //   //jika proxymity detec maka slsai
+  //   //menendang(20);
+  //   delay(1000);
+  //   step = 5;
+  // }
 
-  if (step == 2) {
-    set_speed(0, 0, 0);  // Stop the robot
-    delay(1000);
-    led_color_set = RED;
-  }
+  // if (step == 10) {
+  //   penggiring_aktif = true;
+  //   menunggu_oper_vision();
+  //   //jika proxymity detec maka slsai
+  // }
+
+  // if (step == 2) {
+  //   set_speed(0, 0, 0);  // Stop the robot
+  //   delay(1000);
+  //   led_color_set = RED;
+  // }
 
 
 
@@ -462,11 +480,11 @@ void receive_fromNuc() {
       String dataSerial = Serial.readStringUntil('#');
       serialParser.parse(dataSerial, ';');
       komando = serialParser.getValue("komando");
-      // int teman_x = serialParser.getValue("x").toFloat();
-      // int teman_y = serialParser.getValue("y").toFloat();
-      // int teman_state = serialParser.getValue("state").toInt();
-      // int data_dummy1 = serialParser.getValue("dummy2").toInt();
-      // int data_dummy2 = serialParser.getValue("dummy1").toInt();
+      int teman_x = serialParser.getValue("x").toFloat();
+      int teman_y = serialParser.getValue("y").toFloat();
+      int teman_state = serialParser.getValue("state").toInt();
+      int data_dummy1 = serialParser.getValue("dummy2").toInt();
+      int data_dummy2 = serialParser.getValue("dummy1").toInt();
       kamera_x = serialParser.getValue("kamera").toInt();
       kamera_y = serialParser.getValue("ally").toInt();
     }
@@ -474,10 +492,14 @@ void receive_fromNuc() {
   }
 }
 
+void stop (){
+   setMotorSpeed(0, 0, 0);
+}
+
 void moveToPosition(int targetX, int targetY) {
 
   while (true) {
-     digitalWrite(PENENDANG, 1);
+    digitalWrite(PENENDANG, 1);
     if (penggiring_aktif) {
       analogWrite(PWM_PENENDANG_1, 200);
       analogWrite(PWM_PENENDANG_2, 200);
@@ -555,7 +577,7 @@ void moveToPosition(int targetX, int targetY) {
 void run_heading(int deg) {
 
   while (1) {
-     digitalWrite(PENENDANG, 1);
+    digitalWrite(PENENDANG, 1);
     if (penggiring_aktif) {
       analogWrite(PWM_PENENDANG_1, 200);
       analogWrite(PWM_PENENDANG_2, 200);
@@ -605,5 +627,101 @@ void run_heading(int deg) {
     }
     led_color_set = WHITE;
     delay(50);  // Adjust the delay based on the control loop requirements
+  }
+}
+
+void mengejar_bola_vision(int kecepatan_kejar) {
+
+  while (1) {
+
+    int ir = digitalRead(10);  //proxymity sensor
+
+    digitalWrite(PENENDANG, 1);
+    if (penggiring_aktif) {
+      analogWrite(PWM_PENENDANG_1, 200);
+      analogWrite(PWM_PENENDANG_2, 200);
+    } else {
+      analogWrite(PWM_PENENDANG_1, 0);
+      analogWrite(PWM_PENENDANG_2, 0);
+    }
+
+    int error = kamera_x;
+    float control_gain = 7.5;
+
+    float speedZ = error * control_gain;
+    if (speedZ >= 750) speedZ = 750;
+    if (speedZ <= -750) speedZ = -750;
+
+    set_speed(kecepatan_kejar, 0, speedZ);
+    if (ir == 0) {
+      encoderS1Count = 0;
+      encoderS2Count = 0;
+      set_speed(0, 0, 0);  // Stop the robot
+      break;
+      //break;
+    }
+  }
+}
+
+void menunggu_oper_vision() {
+
+  while (1) {
+    int ir = digitalRead(10);  //proxymity sensor
+
+    digitalWrite(PENENDANG, 1);
+    if (penggiring_aktif) {
+      analogWrite(PWM_PENENDANG_1, 200);
+      analogWrite(PWM_PENENDANG_2, 200);
+    } else {
+      analogWrite(PWM_PENENDANG_1, 0);
+      analogWrite(PWM_PENENDANG_2, 0);
+    }
+
+    int error_kamera = kamera_x;
+    float control_gain = 7.5;
+
+    float speedX = error_kamera * control_gain;
+    if (speedX >= 500) speedX = 500;
+    if (speedX <= -500) speedX = -500;
+
+
+    float error_imu = bno_z;
+    if (error_imu >= 180) {
+      error_imu = error_imu - 360;
+    }
+    float error = error_imu;
+    float maxError = 20;
+    float maxerr_intergral = 10;
+    if (error > maxError) {
+      error = maxError;
+    } else if (error < -maxError) {
+      error = -maxError;
+    }
+
+    if (abs(error) < maxerr_intergral) {
+      integral3 += error;
+    } else {
+      integral3 = 0;
+    }
+
+    // PID control IMU
+    float kp = 25.0;
+    float ki = 0;
+    float kd = 20.0;
+    float speedZ = kp * error + ki * integral3 + kd * (error - global_var_last_error_slot3);
+    global_var_last_error_slot3 = error;
+    //float speedZ = error_imu * 1.5;
+
+    if (speedZ >= 100) speedZ = 100;
+    if (speedZ <= -100) speedZ = -100;
+    if (yaw_kontrol_odometry_on) set_speed(0, speedX, speedZ);
+    else set_speed(0, speedX, 0);
+    if (ir == 0) {
+      encoderS1Count = 0;
+      encoderS2Count = 0;
+      set_speed(0, 0, 0);  // Stop the robot
+      break;
+      //break;
+    }
   }
 }
