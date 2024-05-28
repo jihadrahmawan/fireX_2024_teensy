@@ -144,7 +144,7 @@ void setup() {
 
   // delay(4000);
   pinMode(PENENDANG, OUTPUT);
-  Serial.begin(115200);
+  Serial.begin(9600);
   pinMode(PWM_PENENDANG_1, OUTPUT);
   pinMode(PWM_PENENDANG_2, OUTPUT);
   Wire.begin();
@@ -501,6 +501,7 @@ void moveToPosition(int targetX, int targetY) {
   while (true) {
 
     Serial.println(String(x_pos) + ";" + String(y_pos) + ";" + String(bno_z) + ";" + String(step));
+     Serial.flush();
     digitalWrite(PENENDANG, 1);
     if (penggiring_aktif) {
       analogWrite(PWM_PENENDANG_1, 200);
@@ -581,6 +582,7 @@ void run_heading(int deg) {
   while (1) {
 
     Serial.println(String(x_pos) + ";" + String(y_pos) + ";" + String(bno_z) + ";" + String(step));
+     Serial.flush();
     digitalWrite(PENENDANG, 1);
     if (penggiring_aktif) {
       analogWrite(PWM_PENENDANG_1, 200);
