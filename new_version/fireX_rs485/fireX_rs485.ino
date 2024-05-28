@@ -178,165 +178,169 @@ void setup() {
   threads.addThread(get_robot_pos_from_encoder);
   //threads.addThread(run_odometry);
   //threads.addThread(run_heading);
- // threads.addThread(send_toNuc);
+  // threads.addThread(send_toNuc);
   //threads.addThread(receive_fromNuc);
   serialParser.init(mapSerial, 9);
 }
 
 
-void read_serial(){
-  
-}
 void loop() {
 
- // String komando = serialParser.getValue("komando");
+  // String komando = serialParser.getValue("komando");
   if (Serial.available() > 0) {
-      String dataSerial = Serial.readStringUntil('#');
-      serialParser.parse(dataSerial, ';');
-      komando = serialParser.getValue("komando");
-      int teman_x = serialParser.getValue("x").toFloat();
-      int teman_y = serialParser.getValue("y").toFloat();
-      int teman_state = serialParser.getValue("state").toInt();
-      int data_dummy1 = serialParser.getValue("dummy2").toInt();
-      int data_dummy2 = serialParser.getValue("dummy1").toInt();
-      kamera_x = serialParser.getValue("kamera").toInt();
-      kamera_y = serialParser.getValue("ally").toInt();
-    }
-
-  
-  // String strategi = serialParser.getValue("strategi");
-
-  if (komando == '1') {
-    // menunggu_oper_vision();
-
-    if (step == 0) {
-      // contoh jika step 0 menggunakan odometry
-      // 1 isi dulu koordinat robot
-      targetX = -35;
-      targetY = 110;
-      // perlukan kontrol yaw untuk bergerak?
-      // jika iya maka:
-      yaw_kontrol_odometry_on = true;
-      // jika perlu penggiring maka :
-      penggiring_aktif = true;
-      moveToPosition(targetX, targetY);
-      set_speed(0, 0, 0);  // Stop the robot
-      delay(5000);
-      //menendang (30);
-      step = 1;
-    }
-
-    //===============================step 1
-
-    if (step == 1) {
-      // contoh jika step 1 menggunakan odometry
-      // 1 isi dulu koordinat robot
-      targetX = -10;
-      targetY = 100;
-      // perlukan kontrol yaw untuk bergerak?
-      // jika iya maka:
-      yaw_kontrol_odometry_on = false;
-      // jika perlu penggiring maka :
-      penggiring_aktif = true;
-      moveToPosition(targetX, targetY);
-      set_speed(0, 0, 0);  // Stop the robot
-      delay(5000);
-      menendang(20);
-      step = 2;
-    }
-
-    // menunggu_oper_vision();
-
-    if (step == 2) {
-      // contoh jika step 2 tidak menggunakan odometry
-      // 1 isi dulu koordinat robot
-      targetX = -100;
-      targetY = 0;
-      // perlukan kontrol yaw untuk bergerak?
-      // jika iya maka:
-      yaw_kontrol_odometry_on = false;
-      // jika perlu penggiring maka :
-      penggiring_aktif = true;
-      moveToPosition(targetX, targetY);
-      set_speed(0, 0, 0);  // Stop the robot
-      delay(4000);
-      step = 3;
-    }
-
-    //   //===============================step 3
-
-    if (step == 3) {
-      // contoh jika step 3 menggunakan odometry
-      // 1 isi dulu koordinat robot
-      targetX = -5;
-      targetY = 75;
-      // perlukan kontrol yaw untuk bergerak?
-      // jika iya maka:
-      yaw_kontrol_odometry_on = true;
-      // jika perlu penggiring maka :
-      penggiring_aktif = true;
-      moveToPosition(targetX, targetY);
-      set_speed(0, 0, 0);  // Stop the robot
-      delay(3000);
-      step = 4;
-    }
-
-    //   //===============================step 4
-
-    if (step == 4) {
-      // contoh step 4 set heading
-      targetHeading = -25;
-      penggiring_aktif = true;   // penggiring aktif
-      set_heading_aktif = true;  //nyalakan robot untuk set heading
-      run_heading(targetHeading);
-      delay(1000);  // delay sejenak sebelum menendang lagi
-      //reset_variable();
-      set_speed(0, 0, 0);  // Stop the robot
-      delay(4000);
-      menendang(50);
-      step = 5;
-    }
-    //===============================step 5
-    if (step == 5) {
-      // contoh step 5 set heading
-      targetHeading = 10;
-      penggiring_aktif = true;   // penggiring aktif
-      set_heading_aktif = true;  //nyalakan robot untuk set heading
-      run_heading(targetHeading);
-      delay(1000);  // delay sejenak sebelum menendang lagi
-      //reset_variable();
-      set_speed(0, 0, 0);  // Stop the robot
-      delay(3000);
-
-      step = 6;
-    }
-    //===============================step 6
-
-    if (step == 6) {
-      // contoh jika step 6 menggunakan odometry
-      // 1 isi dulu koordinat robot
-      targetX = -20;
-      targetY = -145;
-      // perlukan kontrol yaw untuk bergerak?
-      // jika iya maka:
-      yaw_kontrol_odometry_on = true;
-      // jika perlu penggiring maka :
-      penggiring_aktif = true;
-      moveToPosition(targetX, targetY);
-      set_speed(0, 0, 0);  // Stop the robot
-      delay(3000);
-      step = 7;
-      led_color_set = RED;
-    }
-  } else {
-    Serial.println(String(x_pos) + ";" + String(y_pos) + ";" + String(bno_z) + ";" + String(step));
-    Serial.flush();
-    digitalWrite(PENENDANG, 1);
-    led_color_set = RED;
-    delay(50);
-    //stop();
+    String dataSerial = Serial.readStringUntil('#');
+    serialParser.parse(dataSerial, ';');
+    komando = serialParser.getValue("komando");
+    int teman_x = serialParser.getValue("x").toFloat();
+    int teman_y = serialParser.getValue("y").toFloat();
+    int teman_state = serialParser.getValue("state").toInt();
+    int data_dummy1 = serialParser.getValue("dummy2").toInt();
+    int data_dummy2 = serialParser.getValue("dummy1").toInt();
+    kamera_x = serialParser.getValue("kamera").toInt();
+    kamera_y = serialParser.getValue("ally").toInt();
   }
 
+
+  // String strategi = serialParser.getValue("strategi");
+
+  //if (komando == '1') {
+  // menunggu_oper_vision();
+
+  if (step == 0) {
+    // contoh jika step 0 menggunakan odometry
+    // 1 isi dulu koordinat robot
+    targetX = -35;
+    targetY = 110;
+    // perlukan kontrol yaw untuk bergerak?
+    // jika iya maka:
+    yaw_kontrol_odometry_on = true;
+    // jika perlu penggiring maka :
+    penggiring_aktif = true;
+    moveToPosition(targetX, targetY);
+    set_speed(0, 0, 0);  // Stop the robot
+    delay(5000);
+    //menendang (30);
+    step = 1;
+  }
+
+  //===============================step 1
+
+  if (step == 1) {
+    // contoh jika step 1 menggunakan odometry
+    // 1 isi dulu koordinat robot
+    targetX = -10;
+    targetY = 100;
+    // perlukan kontrol yaw untuk bergerak?
+    // jika iya maka:
+    yaw_kontrol_odometry_on = false;
+    // jika perlu penggiring maka :
+    penggiring_aktif = true;
+    moveToPosition(targetX, targetY);
+    set_speed(0, 0, 0);  // Stop the robot
+    delay(5000);
+    menendang(20);
+    step = 2;
+  }
+
+  // menunggu_oper_vision();
+
+  if (step == 2) {
+    // contoh jika step 2 tidak menggunakan odometry
+    // 1 isi dulu koordinat robot
+    targetX = -100;
+    targetY = 0;
+    // perlukan kontrol yaw untuk bergerak?
+    // jika iya maka:
+    yaw_kontrol_odometry_on = false;
+    // jika perlu penggiring maka :
+    penggiring_aktif = true;
+    moveToPosition(targetX, targetY);
+    set_speed(0, 0, 0);  // Stop the robot
+    delay(4000);
+    step = 3;
+  }
+
+  //   //===============================step 3
+
+  if (step == 3) {
+    // contoh jika step 3 menggunakan odometry
+    // 1 isi dulu koordinat robot
+    targetX = -5;
+    targetY = 75;
+    // perlukan kontrol yaw untuk bergerak?
+    // jika iya maka:
+    yaw_kontrol_odometry_on = true;
+    // jika perlu penggiring maka :
+    penggiring_aktif = true;
+    moveToPosition(targetX, targetY);
+    set_speed(0, 0, 0);  // Stop the robot
+    delay(3000);
+    step = 4;
+  }
+
+  //   //===============================step 4
+
+  if (step == 4) {
+    // contoh step 4 set heading
+    targetHeading = -25;
+    penggiring_aktif = true;   // penggiring aktif
+    set_heading_aktif = true;  //nyalakan robot untuk set heading
+    run_heading(targetHeading);
+    delay(1000);  // delay sejenak sebelum menendang lagi
+    //reset_variable();
+    set_speed(0, 0, 0);  // Stop the robot
+    delay(4000);
+    menendang(50);
+    step = 5;
+  }
+  //===============================step 5
+  if (step == 5) {
+    // contoh step 5 set heading
+    targetHeading = 10;
+    penggiring_aktif = true;   // penggiring aktif
+    set_heading_aktif = true;  //nyalakan robot untuk set heading
+    run_heading(targetHeading);
+    delay(1000);  // delay sejenak sebelum menendang lagi
+    //reset_variable();
+    set_speed(0, 0, 0);  // Stop the robot
+    delay(3000);
+
+    step = 6;
+  }
+  //===============================step 6
+
+  if (step == 6) {
+    // contoh jika step 6 menggunakan odometry
+    // 1 isi dulu koordinat robot
+    targetX = -20;
+    targetY = -145;
+    // perlukan kontrol yaw untuk bergerak?
+    // jika iya maka:
+    yaw_kontrol_odometry_on = true;
+    // jika perlu penggiring maka :
+    penggiring_aktif = true;
+    moveToPosition(targetX, targetY);
+    set_speed(0, 0, 0);  // Stop the robot
+    delay(3000);
+    step = 7;
+    led_color_set = RED;
+  }
+  // } else {
+  //   Serial.println(String(x_pos) + ";" + String(y_pos) + ";" + String(bno_z) + ";" + String(step));
+  //   Serial.flush();
+  //   digitalWrite(PENENDANG, 1);
+  //   led_color_set = RED;
+  //   setMotorSpeed(0,0,0);
+  //   delay(50);
+  //   //stop();
+  // }
+  
+  Serial.println(String(x_pos) + ";" + String(y_pos) + ";" + String(bno_z) + ";" + String(step));
+  Serial.flush();
+  digitalWrite(PENENDANG, 1);
+  led_color_set = RED;
+  setMotorSpeed(0, 0, 0);
+  delay(50);
   // Loop back to set motor speed again, or implement other logic as needed
 }
 
@@ -559,7 +563,7 @@ void send_toNuc() {
 void receive_fromNuc() {
   while (1) {
 
-    
+
     threads.delay(10);
   }
 }
